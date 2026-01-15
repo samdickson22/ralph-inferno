@@ -2,63 +2,91 @@
 
 ## ralph.sh
 
-The main entry point for running Ralph.
+The main entry point for running Ralph on the VM.
 
 ### Basic Usage
 
 ```bash
-./ralph.sh              # Clean loop (default)
-./ralph.sh --full       # Full mode with all features
-./ralph.sh --status     # Show progress
-./ralph.sh --watch      # Fireplace dashboard
-./ralph.sh --help       # Show help
+./ralph.sh                    # Quick mode (default)
+./ralph.sh --orchestrate      # Standard mode with E2E + auto-CR
+./ralph.sh --orchestrate --parallel  # Inferno mode (all features)
+./ralph.sh --status           # Show progress
+./ralph.sh --cost             # Show token usage estimate
+./ralph.sh --watch            # Fireplace dashboard
+./ralph.sh --help             # Show help
 ```
 
 ### Flags
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--full` | | Run full mode with parallel execution, worktrees |
+| `--orchestrate` | `-o` | Middle loop with E2E tests + auto-CR |
+| `--parallel` | `-p` | Use git worktrees for parallel execution |
 | `--status` | `-s` | Show current progress (specs done/total) |
+| `--cost` | `-c` | Show token usage and cost estimate |
 | `--watch` | `-w` | Live dashboard showing Ralph's progress |
-| `--parallel` | | Use git worktrees for parallel spec execution |
+| `--full` | | Legacy full mode (~1900 lines) |
 | `--help` | `-h` | Show help message |
 
-## Clean vs Full Mode
+## Three Modes
 
-### Clean Mode (default)
-
-- ~150 lines of code
-- Sequential spec execution
-- Simple and predictable
-- Lower token usage
-- Follows Ryan Carson / Geoffrey Huntley approach
+### Quick Mode (default)
 
 ```bash
 ./ralph.sh
 ```
 
-### Full Mode
+- Spec execution + build verify
+- No E2E tests
+- Fastest, lowest token usage
+- Good for simple projects or debugging
 
-- ~1900 lines of code
-- Parallel execution with git worktrees
-- Automatic scaling based on rate limits
-- Progress dashboard
-- More complex, higher token usage
+### Standard Mode
 
 ```bash
-./ralph.sh --full
+./ralph.sh --orchestrate
 ```
+
+- Everything in Quick mode, plus:
+- Playwright E2E tests after each spec
+- Auto-CR generation when tests fail
+- Middle loop retries until all specs pass
+- Recommended for most projects
+
+### Inferno Mode
+
+```bash
+./ralph.sh --orchestrate --parallel
+```
+
+- Everything in Standard mode, plus:
+- Design review with Claude Vision
+- Auto-CR for design issues
+- Parallel worktrees for faster execution
+- Full autonomous power
 
 ## When to Use Each Mode
 
 | Use Case | Mode |
 |----------|------|
-| Most projects | Clean |
-| Large projects (20+ specs) | Full |
-| Debugging | Clean |
-| Overnight runs | Either |
-| Limited API credits | Clean |
+| Simple project | Quick |
+| Most projects | Standard |
+| Large projects (20+ specs) | Inferno |
+| Debugging | Quick |
+| Overnight runs | Standard/Inferno |
+| Limited API credits | Quick |
+
+## Deploy Mode Selection
+
+When running `/ralph:deploy`, you choose the mode:
+
+```
+Vilken mode vill du köra Ralph i?
+
+1. Standard (E2E + auto-CR) - Recommended
+2. Quick (bara build)
+3. Inferno (allt + parallel)
+```
 
 ## ralph-inferno CLI
 
@@ -75,3 +103,13 @@ During `install`, you'll be asked:
 3. VM name and region
 4. GitHub username (auto-detected from `gh` CLI)
 5. ntfy.sh notifications (optional)
+
+## Slash Commands
+
+| Command | Description |
+|---------|-------------|
+| `/ralph:discover` | Autonomous discovery loop → PRD |
+| `/ralph:plan` | Break down PRD → specs |
+| `/ralph:deploy` | Push to GitHub, start on VM |
+| `/ralph:review` | Open tunnels, test the app |
+| `/ralph:change-request` | Document bugs → CR specs |

@@ -1,11 +1,11 @@
-# /review - Review Ralph's work
+# /ralph:review - Review Ralph's work
 
 Check if Ralph is done and review the results.
 
 ## Usage
 ```
-/review
-/review --tunnel   # Also open SSH tunnel for testing
+/ralph:review
+/ralph:review --tunnel   # Also open SSH tunnel for testing
 ```
 
 ## Instructions

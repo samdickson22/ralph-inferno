@@ -1,12 +1,12 @@
-# /discover - Interactive Requirements Discovery
+# /ralph:discover - Interactive Requirements Discovery
 
 Start an interactive discovery session to create a PRD and set up the project.
 
 ## Usage
 ```
-/discover [project-name]
-/discover my-app
-/discover my-app --input meeting-notes.md
+/ralph:discover [project-name]
+/ralph:discover my-app
+/ralph:discover my-app --input meeting-notes.md
 ```
 
 ## CRITICAL INSTRUCTIONS
@@ -105,7 +105,7 @@ Then: "Any constraints or requirements? (or 'none'):"
 ```
 Do you have design preferences?
 
-1) Yes - I have brand guidelines or a website I like
+1) Yes - I have brand guidelines or a website I like (recommended if you have them)
 2) No - Use sensible defaults
 
 Reply with number:
@@ -226,7 +226,7 @@ If Supabase was selected:
 ```
 Do you have Supabase credentials ready?
 
-1) Yes, I'll add them to .env.local
+1) Yes, I'll add them to .env.local (recommended)
 2) No, I'll set up Supabase later
 
 Reply with number:
@@ -326,9 +326,9 @@ SECRETS HANDLING:
   - docs/prd.md - Product Requirements Document
   - CLAUDE.md - Project instructions
 - List next steps:
-  1. `/plan` - Create implementation plan from PRD
-  2. `/deploy` - Send to VM and run autonomously
-  3. `/review` - Review results when done
+  1. `/ralph:plan` - Create implementation plan from PRD
+  2. `/ralph:deploy` - Send to VM and run autonomously
+  3. `/ralph:review` - Review results when done
 
 ---
 

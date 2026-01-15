@@ -1,10 +1,10 @@
-# /idea - Start Discovery Loop
+# /ralph:idea - Start Discovery Loop
 
 Autonom utforskning av en produktidé från alla vinklar med web research.
 
 ## Usage
 ```
-/idea "Din produktidé här"
+/ralph:idea "Din produktidé här"
 ```
 
 ## Instructions

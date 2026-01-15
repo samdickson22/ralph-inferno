@@ -1,15 +1,15 @@
-# /change-request - Create Change Request from Testing
+# /ralph:change-request - Create Change Request from Testing
 
 Document bugs and issues found during testing, generate new specs for Ralph to fix.
 
 ## Usage
 ```
-/change-request
+/ralph:change-request
 ```
 
 ## Prerequisites
-- App has been built by Ralph (`/deploy` completed)
-- Testing has been done (`/review` completed)
+- App has been built by Ralph (`/ralph:deploy` completed)
+- Testing has been done (`/ralph:review` completed)
 - Issues/bugs have been identified
 
 ## Output
@@ -142,5 +142,5 @@ Skapade:
 - docs/CHANGE_REQUEST.md
 - X nya specs i specs/CR-*.md
 
-Nästa: Kör /deploy för att skicka CR-specs till VM
+Nästa: Kör /ralph:deploy för att skicka CR-specs till VM
 ```

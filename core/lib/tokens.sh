@@ -54,3 +54,67 @@ estimate_spec_complexity() {
         echo "large"
     fi
 }
+
+# =============================================================================
+# COST TRACKING
+# =============================================================================
+
+# Pricing per 1M tokens (as of 2024)
+# Claude 3.5 Sonnet: $3/1M input, $15/1M output
+# Claude 3 Opus: $15/1M input, $75/1M output
+INPUT_COST_PER_M=${INPUT_COST_PER_M:-3}    # Sonnet default
+OUTPUT_COST_PER_M=${OUTPUT_COST_PER_M:-15}
+
+# Estimate cost from tokens
+estimate_cost() {
+    local input_tokens=$1
+    local output_tokens=${2:-$((input_tokens / 2))}  # Estimate output as half of input
+
+    # Cost in dollars (tokens / 1M * price)
+    local input_cost=$(echo "scale=4; $input_tokens / 1000000 * $INPUT_COST_PER_M" | bc)
+    local output_cost=$(echo "scale=4; $output_tokens / 1000000 * $OUTPUT_COST_PER_M" | bc)
+    local total=$(echo "scale=4; $input_cost + $output_cost" | bc)
+
+    echo "$total"
+}
+
+# Get cost summary for today
+get_today_cost() {
+    local today=$(date '+%Y-%m-%d')
+    local total_tokens=$(grep "$today" "$TOKEN_LOG" 2>/dev/null | awk -F'|' '{sum += $2} END {print sum+0}')
+
+    if [ "$total_tokens" -eq 0 ]; then
+        echo "0.00"
+        return
+    fi
+
+    estimate_cost "$total_tokens"
+}
+
+# Print cost summary
+print_cost_summary() {
+    local today=$(date '+%Y-%m-%d')
+
+    echo "=== COST SUMMARY ==="
+    echo ""
+
+    # Today
+    local today_tokens=$(grep "$today" "$TOKEN_LOG" 2>/dev/null | awk -F'|' '{sum += $2} END {print sum+0}')
+    local today_cost=$(estimate_cost "$today_tokens")
+    echo "Today: ~${today_tokens} tokens ≈ \$${today_cost}"
+
+    # This week
+    local week_tokens=$(grep "$(date '+%Y-%m')" "$TOKEN_LOG" 2>/dev/null | awk -F'|' '{sum += $2} END {print sum+0}')
+    local week_cost=$(estimate_cost "$week_tokens")
+    echo "This month: ~${week_tokens} tokens ≈ \$${week_cost}"
+
+    # Per spec average
+    local spec_count=$(grep "$today" "$TOKEN_LOG" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$spec_count" -gt 0 ]; then
+        local avg=$((today_tokens / spec_count))
+        echo "Avg per spec: ~${avg} tokens"
+    fi
+
+    echo ""
+    echo "(Based on Claude 3.5 Sonnet pricing)"
+}

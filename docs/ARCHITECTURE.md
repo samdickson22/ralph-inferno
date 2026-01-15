@@ -2,45 +2,72 @@
 
 ## Overview
 
-```mermaid
-graph TB
-    subgraph Local["Your Machine (outer loop)"]
-        You[You] <--> CC[Claude Code]
-        CC --> |/ralph:discover| PRD[docs/prd.md]
-        CC --> |/ralph:plan| Specs[specs/*.md]
-        CC --> |/ralph:deploy| SSH
-    end
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           THREE LOOPS                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-    subgraph VM["VM (inner loop)"]
-        Ralph[ralph.sh] --> Loop{Next spec?}
-        Loop --> |Yes| Claude[claude -p < spec]
-        Claude --> Verify[verify_build]
-        Verify --> Commit[git commit + push]
-        Commit --> Done[mark_spec_done]
-        Done --> Loop
-        Loop --> |No| Complete[All done!]
-    end
-
-    SSH --> |SSH| Ralph
+┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│   OUTER LOOP     │    │   MIDDLE LOOP    │    │   INNER LOOP     │
+│   (Your Machine) │ →  │   (Orchestrator) │ →  │   (Per Spec)     │
+├──────────────────┤    ├──────────────────┤    ├──────────────────┤
+│ /ralph:discover  │    │ ralph.sh         │    │ Claude runs spec │
+│ /ralph:plan      │    │ --orchestrate    │    │ npm run build    │
+│ /ralph:deploy    │    │                  │    │ playwright test  │
+│ /ralph:review    │    │ Retries specs    │    │ Auto-CR on fail  │
+│                  │    │ until all pass   │    │ Design review    │
+└──────────────────┘    └──────────────────┘    └──────────────────┘
+       YOU                   VM (auto)              VM (auto)
 ```
 
-## Core Loop (ralph.sh ~150 lines)
+## Three Modes
+
+| Mode | Flag | What it does |
+|------|------|--------------|
+| **Quick** | (none) | Spec → build → commit |
+| **Standard** | `--orchestrate` | + E2E tests + auto-CR |
+| **Inferno** | `--orchestrate --parallel` | + design review + parallel |
+
+## Inner Loop (per spec)
 
 ```bash
-while true; do
-    # 1. Find next incomplete spec
-    spec=$(next_incomplete_spec)
-    [ -z "$spec" ] && break  # All done!
-
-    # 2. Run Claude on spec
+run_spec() {
+    # 1. Claude runs spec
     claude -p --dangerously-skip-permissions < "$spec"
 
-    # 3. Verify build works
-    verify_build || continue  # retry if fail
+    # 2. Verify build
+    npm run build || retry
 
-    # 4. Commit + mark done
+    # 3. Run E2E tests (Standard/Inferno mode)
+    npx playwright test || generate_cr && retry
+
+    # 4. Design review (Inferno mode)
+    take_screenshots
+    claude --vision "Check against design system" || generate_design_cr && retry
+
+    # 5. Commit & mark done
     git commit && mark_spec_done "$spec"
+}
+```
+
+## Middle Loop (Orchestrator)
+
+```bash
+# orchestrator.sh
+MAX_ITERATIONS=3
+
+while [ $iteration -lt $MAX_ITERATIONS ]; do
+    ralph.sh  # Run all specs
+
+    if all_specs_done; then
+        notify "✅ Complete!"
+        exit 0
+    fi
+
+    ((iteration++))
 done
+
+notify "⚠️ Needs help"
 ```
 
 ## Memory Model (Ryan Carson)
@@ -53,38 +80,50 @@ done
 
 **Fresh context per iteration** = Each spec starts with empty Claude session.
 
-## Outer vs Inner Loop
-
-| | Outer (local) | Inner (VM) |
-|---|--------------|------------|
-| Who controls | YOU | ralph.sh |
-| Claude mode | Interactive | `--dangerously-skip-permissions` |
-| Purpose | Plan | Build |
-| Commands | /ralph:* | None |
-
 ## File Structure
 
 ```
 .ralph/
 ├── scripts/
-│   ├── ralph.sh          # Clean loop (~150 lines)
-│   └── ralph-full.sh     # Full mode (--full flag)
+│   ├── ralph.sh          # Main entry point
+│   ├── orchestrator.sh   # Middle loop (--orchestrate)
+│   └── ralph-full.sh     # Legacy full mode
 │
 ├── lib/
 │   ├── spec-utils.sh     # next_spec, mark_done, checksums
-│   ├── verify.sh         # verify_build (with selfheal)
-│   ├── selfheal.sh       # Auto-fix missing deps
-│   ├── notify.sh         # ntfy + epic tracking
+│   ├── verify.sh         # verify_build
+│   ├── test-loop.sh      # E2E tests + CR generation + design review
+│   ├── notify.sh         # ntfy notifications
 │   ├── git-utils.sh      # commit, push, safety checks
-│   └── rate-limit.sh     # Handle rate limits
+│   ├── rate-limit.sh     # Handle rate limits
+│   ├── tokens.sh         # Cost tracking
+│   └── parallel.sh       # Worktree management
 │
-└── templates/stacks/
-    └── react-supabase/
-        └── scripts/
-            ├── requirements.sh  # Check VM deps
-            ├── verify.sh        # Stack-specific verify
-            └── setup.sh         # Init stack
+├── .claude/commands/
+│   ├── ralph:discover.md # Discovery loop
+│   ├── ralph:plan.md     # Generate specs
+│   ├── ralph:deploy.md   # Push & start VM
+│   ├── ralph:review.md   # Test via tunnel
+│   └── ralph:change-request.md  # Bug → CR specs
+│
+└── templates/
+    ├── PRD-template.md
+    ├── SPEC-template.md
+    └── stacks/react-supabase/
 ```
+
+## Features by Mode
+
+| Feature | Quick | Standard | Inferno |
+|---------|-------|----------|---------|
+| Spec execution | ✅ | ✅ | ✅ |
+| Build verify | ✅ | ✅ | ✅ |
+| E2E tests | ❌ | ✅ | ✅ |
+| Auto-CR generation | ❌ | ✅ | ✅ |
+| Design review | ❌ | ❌ | ✅ |
+| Parallel worktrees | ❌ | ❌ | ✅ |
+| Loop protection | ✅ | ✅ | ✅ |
+| ntfy notifications | ✅ | ✅ | ✅ |
 
 ## References
 

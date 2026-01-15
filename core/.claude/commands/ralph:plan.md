@@ -1,14 +1,14 @@
-# /plan - Create Implementation Plan
+# /ralph:plan - Create Implementation Plan
 
 Analyze PRD and create implementation plan with executable specs.
 
 ## Usage
 ```
-/plan
+/ralph:plan
 ```
 
 ## Prerequisites
-- `docs/prd.md` must exist (run `/discover` first)
+- `docs/prd.md` must exist (run `/ralph:discover` first)
 
 ## Output
 - `docs/IMPLEMENTATION_PLAN.md` - Översikt med epics och tasks
@@ -74,14 +74,25 @@ Skapa filen med denna struktur:
 
 Skapa ALLTID körbara spec-filer i `specs/`. Detta är vad Ralph kör på VM.
 
+> **Templates:** Se `templates/SPEC-template.md` och `templates/specs/01-project-setup.md`
+
 ```
 specs/
-├── 01-project-setup.md
+├── 01-project-setup.md   ← MÅSTE inkludera Playwright!
 ├── 02-database-schema.md
 ├── 03-auth-context.md
 ├── 04-login-page.md
 └── ...
 ```
+
+**KRITISKT - 01-project-setup MÅSTE innehålla:**
+- Vite + React + TypeScript setup
+- Tailwind med design tokens från PRD
+- **Playwright installation** (`npx playwright install`)
+- `playwright.config.ts`
+- `e2e/smoke.spec.ts`
+
+> ⚠️ Utan Playwright fungerar inte Ralph's test-loop!
 
 **Spec-fil format (MINIMALT för liten context window):**
 ```markdown
@@ -93,8 +104,13 @@ specs/
 - {Konkret krav 1}
 - {Konkret krav 2}
 
+## E2E Test
+Skriv test i `e2e/{feature}.spec.ts` som verifierar:
+- {vad testet ska kolla}
+
 ## Klart när
 - [ ] `npm run build` passerar
+- [ ] E2E-test passerar
 - [ ] {Specifik verifiering}
 ```
 
@@ -147,5 +163,5 @@ Skriv:
 ```
 PLANNING_DONE
 
-Nästa: Kör /deploy för att skicka till VM och starta bygget
+Nästa: Kör /ralph:deploy för att skicka till VM och starta bygget
 ```

@@ -130,7 +130,7 @@ By continuing, you accept full responsibility for usage.
       name: 'provider',
       message: 'Cloud Provider for VM?',
       choices: [
-        { name: 'Hetzner (hcloud) - Cheapest', value: 'hcloud' },
+        { name: 'Hetzner (hcloud)', value: 'hcloud' },
         { name: 'Google Cloud (gcloud)', value: 'gcloud' },
         { name: 'DigitalOcean (doctl)', value: 'doctl' },
         { name: 'AWS (aws)', value: 'aws' },
@@ -180,8 +180,8 @@ By continuing, you accept full responsibility for usage.
       name: 'useNtfy',
       message: 'Enable ntfy.sh notifications?',
       choices: [
-        { name: 'No', value: false },
-        { name: 'Yes', value: true }
+        { name: 'Yes (recommended)', value: true },
+        { name: 'No', value: false }
       ]
     },
     {
@@ -208,6 +208,53 @@ By continuing, you accept full responsibility for usage.
     }
   ]);
 
+  // Claude authentication
+  const authAnswers = await inquirer.prompt([
+    {
+      type: 'rawlist',
+      name: 'claudeAuth',
+      message: 'How will Claude authenticate on the VM?',
+      choices: [
+        { name: 'Claude Pro/Max subscription (recommended)', value: 'subscription' },
+        { name: 'Anthropic API key', value: 'api_key' }
+      ]
+    }
+  ]);
+
+  // Show instructions based on choice
+  if (authAnswers.claudeAuth === 'subscription') {
+    console.log(chalk.cyan(`
+┌─────────────────────────────────────────────────────────────┐
+│  Claude Subscription Setup                                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  After VM is created, SSH in and run:                       │
+│                                                             │
+│    claude login                                             │
+│                                                             │
+│  This will open a browser to authenticate.                  │
+│  You only need to do this once per VM.                      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+`));
+  } else {
+    console.log(chalk.cyan(`
+┌─────────────────────────────────────────────────────────────┐
+│  Anthropic API Key Setup                                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  After VM is created, set the environment variable:         │
+│                                                             │
+│    export ANTHROPIC_API_KEY="sk-ant-..."                    │
+│                                                             │
+│  Add to ~/.bashrc for persistence:                          │
+│                                                             │
+│    echo 'export ANTHROPIC_API_KEY="sk-ant-..."' >> ~/.bashrc│
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+`));
+  }
+
   // Build config
   const config = {
     version: '1.0.0',
@@ -222,6 +269,9 @@ By continuing, you accept full responsibility for usage.
     },
     github: {
       username: githubAnswers.github_username
+    },
+    claude: {
+      auth_method: authAnswers.claudeAuth
     }
   };
 

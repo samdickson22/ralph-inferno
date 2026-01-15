@@ -61,22 +61,72 @@ npx ralph-inferno update
 
 ## Workflow
 
-```mermaid
-graph LR
-    A[ralph:discover] --> B[ralph:plan]
-    B --> C[ralph:deploy]
-    C --> D[VM runs Ralph]
-    D --> E[ralph:review]
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           RALPH WORKFLOW                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   YOUR IDEA
+      │
+      ▼
+┌─────────────────┐
+│ /ralph:discover │  ◄── Autonomous discovery loop
+│                 │      Claude explores from all angles
+│ Output: PRD.md  │      (Analyst, PM, UX, Architect, Business)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  /ralph:plan    │  ◄── Breaks down PRD into specs
+│                 │
+│ Output: specs/* │      (01-setup.md, 02-auth.md, etc.)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  /ralph:deploy  │  ◄── Push to GitHub, start on VM
+│                 │      Choose mode: Quick/Standard/Inferno
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     ON THE VM (AUTONOMOUS)                       │
+│                                                                  │
+│   ralph.sh runs specs → build → test → auto-fix → commit        │
+│                                                                  │
+└────────┬─────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  /ralph:review  │  ◄── Open tunnels, test the app
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ /ralph:change-      │  ◄── If bugs found, generate CR specs
+│ request             │      Then run /ralph:deploy again
+└─────────────────────┘
 ```
 
 ### Commands
 
 | Command | Description |
 |---------|-------------|
-| `/ralph:discover` | Interactive requirements gathering, creates PRD |
+| `/ralph:discover` | Autonomous discovery loop, creates PRD with web research |
 | `/ralph:plan` | Creates implementation plan + spec files |
-| `/ralph:deploy` | Push to GitHub, start Ralph on VM |
-| `/ralph:review` | Check if done, pull results, open tunnels |
+| `/ralph:deploy` | Push to GitHub, choose mode, start Ralph on VM |
+| `/ralph:review` | Open SSH tunnels, test the app |
+| `/ralph:change-request` | Document bugs, generate CR specs for fixes |
+
+### Deploy Modes
+
+When running `/ralph:deploy`, you choose a mode:
+
+| Mode | What it does |
+|------|--------------|
+| **Quick** | Spec execution + build verify only |
+| **Standard** | + Playwright E2E tests + auto-CR generation |
+| **Inferno** | + Design review + parallel worktrees |
 
 ### Example Session
 
@@ -85,12 +135,16 @@ graph LR
 npx ralph-inferno install
 
 # 2. In Claude Code:
-/ralph:discover    # Answer questions about your project
-/ralph:plan        # Generate implementation plan
-/ralph:deploy      # Send to VM and let Ralph build
+/ralph:discover    # Autonomous discovery with web research
+/ralph:plan        # Generate specs from PRD
+/ralph:deploy      # Choose mode, send to VM
 
 # 3. Next morning:
-/ralph:review      # See what Ralph built
+/ralph:review      # Test what Ralph built
+
+# 4. If bugs found:
+/ralph:change-request  # Generate fix specs
+/ralph:deploy          # Run fixes
 ```
 
 ## Safety
