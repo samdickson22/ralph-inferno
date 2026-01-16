@@ -2,6 +2,10 @@
 # test-loop.sh - E2E testing with Playwright + CR generation
 # Source this file: source lib/test-loop.sh
 
+# Ensure claude provider is loaded
+SCRIPT_DIR_TEST_LOOP="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -z "${CLAUDE_PROVIDER_LOADED:-}" ] && source "$SCRIPT_DIR_TEST_LOOP/claude.sh"
+
 TEST_LOOP_LOADED=true
 
 # Track CR depth to prevent infinite loops
@@ -80,7 +84,7 @@ Use this format:
 - [ ] E2E tests pass
 - [ ] npm run build succeeds"
 
-    echo "$prompt" | timeout 300 claude --dangerously-skip-permissions -p > /dev/null 2>&1
+    run_claude_code "$prompt" 300 > /dev/null 2>&1
 
     if [ -f "$cr_file" ]; then
         log "${GREEN}CR created: $cr_file${NC}"
@@ -174,7 +178,7 @@ Be concise - max 10 lines."
     fi
 
     local result
-    result=$(echo "$prompt" | claude --dangerously-skip-permissions -p --image "$screenshot" 2>&1) || true
+    result=$(run_claude_vision "$prompt" "$screenshot") || true
 
     if echo "$result" | grep -q "DESIGN_OK"; then
         log "${GREEN}✅ Design review passed${NC}"
@@ -229,7 +233,7 @@ Format:
 - [ ] Design review passes
 - [ ] npm run build succeeds"
 
-    echo "$prompt" | timeout 300 claude --dangerously-skip-permissions -p > /dev/null 2>&1
+    run_claude_code "$prompt" 300 > /dev/null 2>&1
 
     if [ -f "$cr_file" ]; then
         log "${GREEN}Design CR created: $cr_file${NC}"

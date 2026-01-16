@@ -9,6 +9,10 @@
 [ -z "${BACKEND_LOADED:-}" ] || return 0
 BACKEND_LOADED=true
 
+# Load claude provider
+SCRIPT_DIR_BACKEND="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR_BACKEND/claude.sh"
+
 CONFIG_FILE="${RALPH_CONFIG:-.ralph/config.json}"
 
 # Read config value
@@ -35,7 +39,7 @@ run_backend_code() {
 
     case "$backend" in
         claude)
-            echo "$prompt" | timeout "$timeout" claude --dangerously-skip-permissions -p 2>&1
+            run_claude_code "$prompt" "$timeout"
             ;;
         opencode)
             timeout "$timeout" opencode run "$prompt" 2>&1
@@ -56,7 +60,7 @@ run_backend_vision() {
 
     case "$backend" in
         claude)
-            echo "$prompt" | claude --dangerously-skip-permissions -p --image "$image_path" 2>&1
+            run_claude_vision "$prompt" "$image_path"
             ;;
         opencode)
             # OpenCode vision support via MCP (not yet implemented)
@@ -77,7 +81,7 @@ check_backend() {
 
     case "$backend" in
         claude)
-            which claude >/dev/null 2>&1
+            check_claude
             ;;
         opencode)
             which opencode >/dev/null 2>&1
