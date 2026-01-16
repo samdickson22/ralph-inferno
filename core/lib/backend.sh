@@ -9,9 +9,10 @@
 [ -z "${BACKEND_LOADED:-}" ] || return 0
 BACKEND_LOADED=true
 
-# Load claude provider
+# Load providers
 SCRIPT_DIR_BACKEND="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR_BACKEND/claude.sh"
+source "$SCRIPT_DIR_BACKEND/opencode.sh"
 
 CONFIG_FILE="${RALPH_CONFIG:-.ralph/config.json}"
 
@@ -42,7 +43,7 @@ run_backend_code() {
             run_claude_code "$prompt" "$timeout"
             ;;
         opencode)
-            timeout "$timeout" opencode run "$prompt" 2>&1
+            run_opencode_code "$prompt" "$timeout"
             ;;
         *)
             echo "Unknown backend: $backend" >&2
@@ -63,9 +64,7 @@ run_backend_vision() {
             run_claude_vision "$prompt" "$image_path"
             ;;
         opencode)
-            # OpenCode vision support via MCP (not yet implemented)
-            echo "Vision not supported by opencode backend" >&2
-            return 1
+            run_opencode_vision "$prompt" "$image_path"
             ;;
         *)
             echo "Unknown backend: $backend" >&2
@@ -84,7 +83,7 @@ check_backend() {
             check_claude
             ;;
         opencode)
-            which opencode >/dev/null 2>&1
+            check_opencode
             ;;
         *)
             echo "Unknown backend: $backend" >&2
