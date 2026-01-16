@@ -194,6 +194,166 @@ Configuration is stored in `.ralph/config.json`:
 }
 ```
 
+## Backends
+
+Ralph supports multiple AI backends through a clean abstraction layer. You can choose your backend during installation or switch later.
+
+### Backend Comparison
+
+| Feature | Claude Code CLI | OpenCode CLI |
+|---------|-----------------|--------------|
+| **CLI Tool** | `claude` | `opencode` |
+| **Installation** | npm (Node.js) | go (Golang) |
+| **Auth Methods** | Subscription OR API key | API key only |
+| **Vision Support** | Full | Not yet (MCP pending) |
+| **Default** | Yes | No |
+| **Best For** | Flat-rate usage with Claude Pro/Max | Pay-per-token, multiple providers |
+
+### Claude Code CLI (Default)
+
+The recommended backend for most users, especially with Claude Pro/Max subscription.
+
+**Installation:**
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+**Authentication options:**
+
+1. **Claude Pro/Max subscription** (recommended for VM automation):
+   ```bash
+   # On the VM, run:
+   claude login
+   ```
+
+2. **Anthropic API key** (pay-per-token):
+   ```bash
+   export ANTHROPIC_API_KEY="sk-ant-..."
+   ```
+
+**Configuration:**
+
+```json
+{
+  "backend": "claude",
+  "claude": {
+    "auth_method": "subscription"
+  }
+}
+```
+
+**Features:**
+- Full vision/image analysis support (design review screenshots)
+- Direct integration with Claude Code skills
+- Recommended timeout: 30 minutes (flat rate with MAX subscription)
+
+### OpenCode CLI
+
+Alternative backend using the OpenCode CLI with configurable providers.
+
+**Installation:**
+
+```bash
+go install github.com/opencode-ai/opencode@latest
+```
+
+**Authentication:**
+
+```bash
+# For Anthropic provider:
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# For OpenRouter (multiple models):
+export OPENROUTER_API_KEY="sk-or-..."
+```
+
+**Configuration:**
+
+```json
+{
+  "backend": "opencode",
+  "opencode": {
+    "model": "anthropic/claude-sonnet-4-20250514"
+  }
+}
+```
+
+**Features:**
+- Supports multiple API providers (Anthropic, OpenRouter, etc.)
+- JSON output format with automatic parsing
+- Agent-based architecture with specialized roles
+
+**Limitations:**
+- Vision support not yet implemented (requires MCP integration)
+- Requires Go runtime for installation
+
+### Switching Backends
+
+**Method 1: Environment variable** (highest priority)
+
+```bash
+export RALPH_BACKEND=opencode
+# or
+export RALPH_BACKEND=claude
+```
+
+**Method 2: Config file** (`.ralph/config.json`)
+
+```json
+{
+  "backend": "opencode"
+}
+```
+
+**Method 3: Re-run installation**
+
+```bash
+npx ralph-inferno install
+```
+
+### Backend Troubleshooting
+
+#### Claude Code CLI
+
+| Issue | Solution |
+|-------|----------|
+| `claude: command not found` | Run `npm install -g @anthropic-ai/claude-code` |
+| `Authentication required` | Run `claude login` on the VM |
+| `Rate limited` | Switch to Claude Pro/Max subscription or wait |
+| `Timeout errors` | Increase timeout in config (default: 1800s) |
+| `Permission denied` | Ralph uses `--dangerously-skip-permissions` flag automatically |
+
+**Verify installation:**
+
+```bash
+claude --version
+```
+
+#### OpenCode CLI
+
+| Issue | Solution |
+|-------|----------|
+| `opencode: command not found` | Run `go install github.com/opencode-ai/opencode@latest` |
+| `ANTHROPIC_API_KEY not set` | Export your API key: `export ANTHROPIC_API_KEY="..."` |
+| `JSON parse error` | Check OpenCode version, update if needed |
+| `Vision not supported` | Use Claude backend for design review features |
+| `Model not found` | Verify model name in config (e.g., `anthropic/claude-sonnet-4-20250514`) |
+
+**Verify installation:**
+
+```bash
+opencode --version
+```
+
+#### General Issues
+
+| Issue | Solution |
+|-------|----------|
+| Backend not detected | Check `RALPH_BACKEND` env var and `.ralph/config.json` |
+| Wrong backend running | Set `RALPH_BACKEND` env var (overrides config) |
+| Skills not found | Re-run `npx ralph-inferno install` to copy skill files |
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md) - System overview and memory model
