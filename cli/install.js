@@ -114,6 +114,15 @@ By continuing, you accept full responsibility for usage.
   const answers = await inquirer.prompt([
     {
       type: 'rawlist',
+      name: 'backend',
+      message: 'AI Backend?',
+      choices: [
+        { name: 'Claude Code CLI (recommended)', value: 'claude' },
+        { name: 'OpenCode CLI', value: 'opencode' }
+      ]
+    },
+    {
+      type: 'rawlist',
       name: 'language',
       message: 'Language?',
       choices: [
@@ -258,6 +267,7 @@ By continuing, you accept full responsibility for usage.
   // Build config
   const config = {
     version: '1.0.0',
+    backend: answers.backend,
     language: answers.language,
     provider: answers.provider,
     ...vmConfig,
@@ -272,7 +282,12 @@ By continuing, you accept full responsibility for usage.
     },
     claude: {
       auth_method: authAnswers.claudeAuth
-    }
+    },
+    ...(answers.backend === 'opencode' && {
+      opencode: {
+        model: 'anthropic/claude-sonnet-4-20250514'
+      }
+    })
   };
 
   // Install core files
