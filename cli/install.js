@@ -217,22 +217,26 @@ By continuing, you accept full responsibility for usage.
     }
   ]);
 
-  // Claude authentication
-  const authAnswers = await inquirer.prompt([
-    {
-      type: 'rawlist',
-      name: 'claudeAuth',
-      message: 'How will Claude authenticate on the VM?',
-      choices: [
-        { name: 'Claude Pro/Max subscription (recommended)', value: 'subscription' },
-        { name: 'Anthropic API key', value: 'api_key' }
-      ]
-    }
-  ]);
+  // Backend-specific authentication
+  let authAnswers = {};
 
-  // Show instructions based on choice
-  if (authAnswers.claudeAuth === 'subscription') {
-    console.log(chalk.cyan(`
+  if (answers.backend === 'claude') {
+    // Claude Code authentication options
+    authAnswers = await inquirer.prompt([
+      {
+        type: 'rawlist',
+        name: 'claudeAuth',
+        message: 'How will Claude Code authenticate on the VM?',
+        choices: [
+          { name: 'Claude Pro/Max subscription (recommended)', value: 'subscription' },
+          { name: 'Anthropic API key', value: 'api_key' }
+        ]
+      }
+    ]);
+
+    // Show instructions based on choice
+    if (authAnswers.claudeAuth === 'subscription') {
+      console.log(chalk.cyan(`
 ┌─────────────────────────────────────────────────────────────┐
 │  Claude Subscription Setup                                  │
 ├─────────────────────────────────────────────────────────────┤
@@ -246,8 +250,8 @@ By continuing, you accept full responsibility for usage.
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 `));
-  } else {
-    console.log(chalk.cyan(`
+    } else {
+      console.log(chalk.cyan(`
 ┌─────────────────────────────────────────────────────────────┐
 │  Anthropic API Key Setup                                    │
 ├─────────────────────────────────────────────────────────────┤
@@ -259,6 +263,28 @@ By continuing, you accept full responsibility for usage.
 │  Add to ~/.bashrc for persistence:                          │
 │                                                             │
 │    echo 'export ANTHROPIC_API_KEY="sk-ant-..."' >> ~/.bashrc│
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+`));
+    }
+  } else {
+    // OpenCode authentication - always API key
+    authAnswers.claudeAuth = 'api_key';
+
+    console.log(chalk.cyan(`
+┌─────────────────────────────────────────────────────────────┐
+│  OpenCode API Key Setup                                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  After VM is created, set the environment variable:         │
+│                                                             │
+│    export ANTHROPIC_API_KEY="sk-ant-..."                    │
+│                                                             │
+│  Or for other providers (OpenRouter, etc):                  │
+│                                                             │
+│    export OPENROUTER_API_KEY="sk-or-..."                    │
+│                                                             │
+│  Add to ~/.bashrc for persistence.                          │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 `));
@@ -295,9 +321,9 @@ By continuing, you accept full responsibility for usage.
 
   await fs.ensureDir(TARGET_DIR);
 
-  // Copy core directories
-  const dirs = ['lib', 'scripts', 'templates', '.claude'];
-  for (const dir of dirs) {
+  // Copy core directories (backend-agnostic)
+  const coreDirs = ['lib', 'scripts', 'templates'];
+  for (const dir of coreDirs) {
     const src = join(CORE_DIR, dir);
     const dest = join(TARGET_DIR, dir);
     if (await fs.pathExists(src)) {
@@ -307,13 +333,27 @@ By continuing, you accept full responsibility for usage.
     }
   }
 
-  // Also copy .claude/commands to project root (where Claude Code reads from)
-  const claudeSrc = join(CORE_DIR, '.claude', 'commands');
-  const claudeDest = join('.claude', 'commands');
-  if (await fs.pathExists(claudeSrc)) {
-    await fs.ensureDir('.claude');
-    await fs.copy(claudeSrc, claudeDest, { overwrite: true });
-    console.log(chalk.green('✅ .claude/commands/ synced to project root'));
+  // Copy backend-specific skill files
+  if (answers.backend === 'claude') {
+    // Copy .claude/commands to .ralph (internal)
+    const claudeSrcInternal = join(CORE_DIR, '.claude');
+    const claudeDestInternal = join(TARGET_DIR, '.claude');
+    if (await fs.pathExists(claudeSrcInternal)) {
+      await fs.copy(claudeSrcInternal, claudeDestInternal);
+      console.log(chalk.green('✅ .claude/ installed (Claude Code skills)'));
+    }
+
+    // Also copy .claude/commands to project root (where Claude Code reads from)
+    const claudeSrc = join(CORE_DIR, '.claude', 'commands');
+    const claudeDest = join('.claude', 'commands');
+    if (await fs.pathExists(claudeSrc)) {
+      await fs.ensureDir('.claude');
+      await fs.copy(claudeSrc, claudeDest, { overwrite: true });
+      console.log(chalk.green('✅ .claude/commands/ synced to project root'));
+    }
+  } else {
+    // OpenCode backend - no skill files to copy (uses different mechanism)
+    console.log(chalk.dim('ℹ️  OpenCode backend uses prompts instead of skill files'));
   }
 
   // Save config
@@ -340,7 +380,11 @@ exec "$RALPH_DIR/scripts/ralph.sh" "$@"
 `));
 
   console.log(chalk.cyan('Next steps:'));
-  console.log(chalk.dim('  1. Run /discover in Claude Code to set up your project'));
+  if (answers.backend === 'claude') {
+    console.log(chalk.dim('  1. Run /ralph:discover in Claude Code to set up your project'));
+  } else {
+    console.log(chalk.dim('  1. Run opencode and use prompts to set up your project'));
+  }
   console.log(chalk.dim('  2. Or run: ./ralph --help'));
   console.log('');
 }
