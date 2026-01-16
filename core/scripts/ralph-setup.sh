@@ -5,6 +5,9 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/backend.sh"
+
 CONFIG_FILE="$HOME/.ralph-vm"
 
 # Färger
@@ -206,12 +209,24 @@ if [ "$CLOUD" != "local" ]; then
         if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i "$ssh_key" "$ssh_user@$vm_ip" "echo 'OK'" 2>/dev/null; then
             echo -e "${GREEN}✅ SSH-anslutning OK${NC}"
 
-            # Kolla om Claude Code finns
-            if ssh -o StrictHostKeyChecking=no -i "$ssh_key" "$ssh_user@$vm_ip" "which claude" 2>/dev/null; then
-                echo -e "${GREEN}✅ Claude Code installerad på VM${NC}"
+            # Kolla om backend CLI finns
+            local backend=$(get_backend)
+            local cli=$(get_backend_cli)
+            if ssh -o StrictHostKeyChecking=no -i "$ssh_key" "$ssh_user@$vm_ip" "which $cli" 2>/dev/null; then
+                echo -e "${GREEN}✅ $cli installerad på VM${NC}"
             else
-                echo -e "${YELLOW}⚠ Claude Code ej hittad på VM${NC}"
-                echo "  Installera med: npm install -g @anthropic-ai/claude-code"
+                echo -e "${YELLOW}⚠ $cli ej hittad på VM${NC}"
+                case "$backend" in
+                    claude)
+                        echo "  Installera med: npm install -g @anthropic-ai/claude-code"
+                        ;;
+                    opencode)
+                        echo "  Installera med: go install github.com/opencode-ai/opencode@latest"
+                        ;;
+                    *)
+                        echo "  Backend '$backend' stöds inte"
+                        ;;
+                esac
             fi
         else
             echo -e "${RED}❌ Kunde inte ansluta till VM${NC}"
