@@ -49,11 +49,11 @@ export async function update() {
     console.log(chalk.dim('   Fix with: ralph-inferno config --set key=value\n'));
   }
 
-  // Update core directories
+  // Update core directories (backend-agnostic)
   console.log(chalk.cyan('Updating core files...'));
 
-  const dirs = ['lib', 'scripts', 'templates', '.claude'];
-  for (const dir of dirs) {
+  const coreDirs = ['lib', 'scripts', 'templates'];
+  for (const dir of coreDirs) {
     const src = join(CORE_DIR, dir);
     const dest = join(TARGET_DIR, dir);
 
@@ -67,13 +67,55 @@ export async function update() {
     }
   }
 
-  // Also copy .claude/commands to project root (where Claude Code reads from)
-  const claudeSrc = join(CORE_DIR, '.claude', 'commands');
-  const claudeDest = join('.claude', 'commands');
-  if (await fs.pathExists(claudeSrc)) {
-    await fs.ensureDir('.claude');
-    await fs.copy(claudeSrc, claudeDest, { overwrite: true });
-    console.log(chalk.green('✅ .claude/commands/ synced to project root'));
+  // Update backend-specific files
+  const backend = config.backend || 'claude';
+
+  if (backend === 'claude') {
+    // Update .claude in .ralph
+    const claudeSrcInternal = join(CORE_DIR, '.claude');
+    const claudeDestInternal = join(TARGET_DIR, '.claude');
+    if (await fs.pathExists(claudeSrcInternal)) {
+      await fs.remove(claudeDestInternal);
+      await fs.copy(claudeSrcInternal, claudeDestInternal);
+      const files = await countFiles(claudeDestInternal);
+      console.log(chalk.green(`✅ .claude/ updated (${files} files)`));
+    }
+
+    // Also copy .claude/commands to project root (where Claude Code reads from)
+    const claudeSrc = join(CORE_DIR, '.claude', 'commands');
+    const claudeDest = join('.claude', 'commands');
+    if (await fs.pathExists(claudeSrc)) {
+      await fs.ensureDir('.claude');
+      await fs.copy(claudeSrc, claudeDest, { overwrite: true });
+      console.log(chalk.green('✅ .claude/commands/ synced to project root'));
+    }
+  } else if (backend === 'opencode') {
+    // Update .opencode in .ralph
+    const opencodeSrcInternal = join(CORE_DIR, '.opencode');
+    const opencodeDestInternal = join(TARGET_DIR, '.opencode');
+    if (await fs.pathExists(opencodeSrcInternal)) {
+      await fs.remove(opencodeDestInternal);
+      await fs.copy(opencodeSrcInternal, opencodeDestInternal);
+      const files = await countFiles(opencodeDestInternal);
+      console.log(chalk.green(`✅ .opencode/ updated (${files} files)`));
+    }
+
+    // Copy .opencode/command to project root
+    const commandSrc = join(CORE_DIR, '.opencode', 'command');
+    const commandDest = join('.opencode', 'command');
+    if (await fs.pathExists(commandSrc)) {
+      await fs.ensureDir('.opencode');
+      await fs.copy(commandSrc, commandDest, { overwrite: true });
+      console.log(chalk.green('✅ .opencode/command/ synced to project root'));
+    }
+
+    // Copy .opencode/agent to project root
+    const agentSrc = join(CORE_DIR, '.opencode', 'agent');
+    const agentDest = join('.opencode', 'agent');
+    if (await fs.pathExists(agentSrc)) {
+      await fs.copy(agentSrc, agentDest, { overwrite: true });
+      console.log(chalk.green('✅ .opencode/agent/ synced to project root'));
+    }
   }
 
   // Config is preserved (we didn't touch it)

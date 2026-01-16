@@ -351,9 +351,33 @@ By continuing, you accept full responsibility for usage.
       await fs.copy(claudeSrc, claudeDest, { overwrite: true });
       console.log(chalk.green('✅ .claude/commands/ synced to project root'));
     }
-  } else {
-    // OpenCode backend - no skill files to copy (uses different mechanism)
-    console.log(chalk.dim('ℹ️  OpenCode backend uses prompts instead of skill files'));
+  } else if (answers.backend === 'opencode') {
+    // Copy .opencode/command to .ralph (internal)
+    const opencodeSrcInternal = join(CORE_DIR, '.opencode');
+    const opencodeDestInternal = join(TARGET_DIR, '.opencode');
+    if (await fs.pathExists(opencodeSrcInternal)) {
+      await fs.copy(opencodeSrcInternal, opencodeDestInternal);
+      console.log(chalk.green('✅ .opencode/ installed (OpenCode skills)'));
+    }
+
+    // Copy .opencode/command to project root (where OpenCode reads from)
+    const commandSrc = join(CORE_DIR, '.opencode', 'command');
+    const commandDest = join('.opencode', 'command');
+    if (await fs.pathExists(commandSrc)) {
+      await fs.ensureDir('.opencode');
+      await fs.copy(commandSrc, commandDest, { overwrite: true });
+      const files = await fs.readdir(commandDest).catch(() => []);
+      console.log(chalk.green(`✅ .opencode/command/ synced to project root (${files.length} commands)`));
+    }
+
+    // Copy .opencode/agent to project root
+    const agentSrc = join(CORE_DIR, '.opencode', 'agent');
+    const agentDest = join('.opencode', 'agent');
+    if (await fs.pathExists(agentSrc)) {
+      await fs.copy(agentSrc, agentDest, { overwrite: true });
+      const files = await fs.readdir(agentDest).catch(() => []);
+      console.log(chalk.green(`✅ .opencode/agent/ synced to project root (${files.length} agents)`));
+    }
   }
 
   // Save config
