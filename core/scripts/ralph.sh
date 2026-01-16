@@ -94,7 +94,7 @@ fi
 # =============================================================================
 
 # Load libraries
-source "$LIB_DIR/claude.sh"
+source "$LIB_DIR/backend.sh"
 source "$LIB_DIR/spec-utils.sh"
 source "$LIB_DIR/verify.sh"
 source "$LIB_DIR/notify.sh"
@@ -156,7 +156,7 @@ run_spec() {
 When complete: write $COMPLETION_MARKER
 Before DONE: run 'npm run build' and verify it passes."
 
-        output=$(run_claude_code "$prompt" $TIMEOUT) || exit_code=$?
+        output=$(run_backend_code "$prompt" $TIMEOUT) || exit_code=$?
 
         if is_rate_limited "$output"; then
             handle_rate_limit "$spec_name"
