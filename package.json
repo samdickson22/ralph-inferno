@@ -13,7 +13,8 @@
     "core"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "bash -n core/scripts/*.sh && bash -n core/lib/*.sh && node --check bin/ralph-inferno.js && node --check cli/*.js",
+    "test": "npm run build"
   },
   "keywords": [
     "claude",
